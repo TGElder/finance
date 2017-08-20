@@ -1,4 +1,4 @@
-ID,From,To,What,Amount,Added
+id,From,To,What,Amount,Added
 1,Savings,Short Term Savings,Init,100001,23-07-17
 2,Savings,Long Term Savings,Init,300003,23-07-17
 3,Joint,Car,Init,20002,23-07-17
