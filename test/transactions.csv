@@ -1,0 +1,9 @@
+ID,From,To,What,Amount,Added
+1,Savings,Short Term Savings,Init,100001,23-07-17
+2,Savings,Long Term Savings,Init,300003,23-07-17
+3,Joint,Car,Init,20002,23-07-17
+4,Savings,Outside,Emergency,400004,23-07-17
+5,Car,Personal,Petrol,4004,31-07-17
+6,Short Term Savings,Personal,Holiday,30003,07-08-17
+7,Car,Joint,Petrol,5005,16-08-17
+8,Outside,Personal,Money Owed By Dave,8008,19-08-17
