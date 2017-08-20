@@ -1,4 +1,4 @@
-This is a simple tool to allow managing personal finances when:
+This is a simple application to allow managing personal finances when:
 
 * You have one or many real bank accounts
 * You have a number of virtual accounts (e.g. part of your savings may be ring fenced for holidays)
@@ -6,7 +6,7 @@ This is a simple tool to allow managing personal finances when:
 
 # CSV Files #
 
-The tool is backed by four CSV files. See the **test** folder for examples. Note that amounts are always in whole numbers (e.g. pennies instead of pounds).
+The application is backed by four CSV files. See the **test** folder for examples. Note that amounts are always in whole numbers (e.g. pennies instead of pounds).
 
 ## readings.csv ##
 
@@ -57,6 +57,8 @@ Create a finance object
 import finance
 finance = finance.Finance("database")
 ```
+
+The application maintains an internal database which is created based on the CSV files. This means you can edit the database by editing the CSV files. `finance.load()` will reload the database from the CSV files and `finance.save()` will save the database to the CSV files. This uses [textbase](https://github.com/TGElder/textbase).
 
 The string used to create the object should be a directory containing the four CSV files above.
 
