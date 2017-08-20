@@ -145,20 +145,39 @@ class Finance:
       
     def get_timestamp(self):
         return datetime.now().strftime("%d-%m-%y")      
-      
-    def insert_transfer(self,from_account, to_account, what, amount):
-        
-        id = self.get_next("_id","transfers")
+
+    def _insert(self, table, from_account, to_account, what, amount):
+        id = self.get_next("_id",table)
         
         self.tb.cursor.execute(
-        "insert into transfers values(?, ?, ?, ?, ?, ?)",
+        "insert into {} values(?, ?, ?, ?, ?, ?)".format(table),
         (id,
         from_account,
         to_account,
         what,
         str(amount),
         self.get_timestamp()))
+        
+    def insert_transfer(self,from_account, to_account, what, amount):
+        self._insert("transfers", from_account, to_account, what, amount)
   
+    def insert_commitment(self,from_account, to_account, what, amount):
+        self._insert("commitments", from_account, to_account, what, amount)
+
+    def close_commitment(self,id):
+        self.tb.cursor.execute(
+        "insert into close_dates values(?, ?)",
+        (id,
+        self.get_timestamp()))        
+        
+    def insert_reading(self,account,reading):
+        self.tb.cursor.execute(
+        "insert into readings values(?, ?, ?, ?)",
+        (self.get_next("_id","readings"),
+        account,
+        str(reading),
+        self.get_timestamp()))
+        
     def set_closed_credit_to_zero(self,account,using):
         amount = self.get_transfer(account)
         
@@ -177,62 +196,38 @@ class Finance:
                                abs(amount))
     
         reading = self.get_latest_reading(account)
-        self.insertReading(account,reading+amount)
+        self.insert_reading(account,reading+amount)
         
         reading = self.get_latest_reading(using)        
-        self.insertReading(using,reading-amount)
+        self.insert_reading(using,reading-amount)
 
         print("Transfer "+str(abs(amount))+" from "+to_account+" to "+from_account+"!")
         
-    
-   
-            
-    def closetransfer(self,id):
-        self.tb.cursor.execute(
-        "insert into close_dates values(?, ?)",
-        (id,
-        self.get_timestamp()))
-        
-    def insertReading(self,account,reading):
-        self.tb.cursor.execute(
-        "insert into readings values(?, ?, ?, ?)",
-        (self.get_next("_id","readings"),
-        account,
-        str(reading),
-        self.get_timestamp()))
-        
-
-        
-
-    
-
-        
-    def insertMonthlys(self,version, month):
+    def create_transfers_from_table(self,table,prefix):
         self.tb.cursor.execute("""
         select _from,_to,_what,_amount
         from monthly_budget
-        where _version = ?
-        """, (version,))
+        """)
+        
+        if prefix:
+            prefix = prefix+" "
         
         for row in self.tb.cursor.fetchall():
             self.insert_transfer(row[0],
                               row[1],
-                              month+" "+row[2], 
-                              row[3], 
-                              True)
+                              prefix+row[2], 
+                              row[3])
         
-        
-    def printSummary(self):
+    def print_summary(self):
         print("Account".ljust(16)
         +"Last Reading +".ljust(16)
-        +"Credit =".ljust(16)
-        +"Balance".ljust(16)
-        +"Credit (Closed)".ljust(16)
-        )
+        +"Transfer +".ljust(16)
+        +"Commitment =".ljust(16)
+        +"Balance".ljust(16))
+        
         for account in self.get_accounts():
             print(account.ljust(16)
-            +str(self.get_latest_reading(account)).ljust(16)
-            +str(self.get_transfer(account, False)).ljust(16)
-            +str(self.get_balance(account)).ljust(16)
-            +str(self.get_transfer(account, True)).ljust(16)
-            )
+            +str(self.get_latest_reading(account)/100).ljust(16)
+            +str(self.get_transfer(account)/100).ljust(16)
+            +str(self.get_commitment(account)/100).ljust(16)
+            +str(self.get_balance(account)/100).ljust(16))

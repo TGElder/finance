@@ -5,7 +5,7 @@ TEST_FILES = ["test_1.csv","test_2.csv"]
 TEST_DATA_DIRECTORY = "test_data"
 TEST_DIRECTORY = "test"
 
-@pytest.fixture(scope="session")
+@pytest.fixture
 def get_finance():
     return finance.Finance("test")
    

@@ -66,13 +66,11 @@ def test_set_closed_credit_to_zero(get_finance):
     assert(get_finance.get_total_balance()==balanceBefore)
     assert(get_finance.get_transfer("Joint")==0)
    
-    get_finance.load()
-    
 def test_insert_transfer(get_finance):
     
     next = get_finance.get_next("_id","transfers")
 
-    get_finance.insert_transfer("Short Term Savings","Personal","Lens",444.44)
+    get_finance.insert_transfer("Short Term Savings","Personal","Lens",44444)
     
     get_finance.get_cursor().execute("""
     select _from,_to,_what,_amount,_added
@@ -85,7 +83,69 @@ def test_insert_transfer(get_finance):
     assert(results[0]=="Short Term Savings")
     assert(results[1]=="Personal")
     assert(results[2]=="Lens")
-    assert(results[3]=="444.44")
+    assert(results[3]=="44444")
     assert(results[4]==get_finance.get_timestamp())
+        
+def test_insert_commitment(get_finance):
+    next = get_finance.get_next("_id","commitments")
+
+    get_finance.insert_commitment("Personal","Outside","Holiday Balance",11111)
     
+    get_finance.get_cursor().execute("""
+    select _from,_to,_what,_amount,_added
+    from commitments
+    where _id = ?
+    """, (next,))
     
+    results = get_finance.get_cursor().fetchone()
+    
+    assert(results[0]=="Personal")
+    assert(results[1]=="Outside")
+    assert(results[2]=="Holiday Balance")
+    assert(results[3]=="11111")
+    assert(results[4]==get_finance.get_timestamp())
+
+def test_close_commitment(get_finance):
+    get_finance.close_commitment(2)
+    get_finance.close_commitment(3)
+    assert(get_finance.get_commitment("Outside")==0)    
+    assert(get_finance.get_commitment("Personal")==0)    
+    assert(get_finance.get_commitment("Savings")==-0) 
+    
+def test_insert_reading(get_finance):
+    get_finance.insert_reading("Savings",950059)
+    
+    assert(get_finance.get_latest_reading("Savings")==950059)
+    
+def test_create_transfers_from_table(get_finance):
+    next = get_finance.get_next("_id","transfers")
+
+    get_finance.create_transfers_from_table("monthly_budgets","August")
+
+    get_finance.get_cursor().execute("""
+    select _from,_to,_what,_amount,_added
+    from transfers
+    where _id = ?
+    """, (next,))
+    
+    results = get_finance.get_cursor().fetchone()
+    
+    assert(results[0]=="Savings")
+    assert(results[1]=="Short Term Savings")
+    assert(results[2]=="August Monthly")
+    assert(results[3]=="25025")
+    assert(results[4]==get_finance.get_timestamp())
+
+    get_finance.get_cursor().execute("""
+    select _from,_to,_what,_amount,_added
+    from transfers
+    where _id = ?
+    """, (next + 1,))
+    
+    results = get_finance.get_cursor().fetchone()
+    
+    assert(results[0]=="Savings")
+    assert(results[1]=="Long Term Savings")
+    assert(results[2]=="August Monthly")
+    assert(results[3]=="35035")
+    assert(results[4]==get_finance.get_timestamp())
