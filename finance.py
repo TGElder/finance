@@ -178,7 +178,7 @@ class Finance:
         str(reading),
         self.get_timestamp()))
         
-    def set_closed_credit_to_zero(self,account,using):
+    def set_transfer_to_zero(self,account,using):
         amount = self.get_transfer(account)
         
         from_account = None
@@ -201,9 +201,9 @@ class Finance:
         reading = self.get_latest_reading(using)        
         self.insert_reading(using,reading-amount)
 
-        print("Transfer "+str(abs(amount))+" from "+to_account+" to "+from_account+"!")
+        print("Transfer "+str(abs(amount/100))+" from "+to_account+" to "+from_account+"!")
         
-    def create_transfers_from_table(self,table,prefix):
+    def create_transfers_from_table(self,table,prefix=""):
         self.tb.cursor.execute("""
         select _from,_to,_what,_amount
         from monthly_budget

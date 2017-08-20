@@ -53,17 +53,26 @@ def test_get_balance(get_finance):
 def test_get_total_balance(get_finance):
     assert(get_finance.get_total_balance()==1030022)
     
-def test_set_closed_credit_to_zero(get_finance):
-    balanceBefore = get_finance.get_total_balance()
+def test_set_transfer_to_zero(get_finance):
+    totalBalanceBefore = get_finance.get_total_balance()
+    savings_balance_before = get_finance.get_balance("Savings")
+
+    personal_balance_before = get_finance.get_balance("Personal")
     
-    get_finance.set_closed_credit_to_zero("Personal","Savings")
-    
-    assert(get_finance.get_total_balance()==balanceBefore)
+    get_finance.set_transfer_to_zero("Personal","Savings")
+
+    assert(get_finance.get_total_balance()==totalBalanceBefore)
+    assert(get_finance.get_balance("Personal")==personal_balance_before)
+    assert(get_finance.get_balance("Savings")==savings_balance_before)
     assert(get_finance.get_transfer("Personal")==0)
-        
-    get_finance.set_closed_credit_to_zero("Joint","Savings")
     
-    assert(get_finance.get_total_balance()==balanceBefore)
+    joint_balance_before = get_finance.get_balance("Joint")
+    
+    get_finance.set_transfer_to_zero("Joint","Savings")
+    
+    assert(get_finance.get_total_balance()==totalBalanceBefore)
+    assert(get_finance.get_balance("Joint")==joint_balance_before)
+    assert(get_finance.get_balance("Savings")==savings_balance_before)
     assert(get_finance.get_transfer("Joint")==0)
    
 def test_insert_transfer(get_finance):
