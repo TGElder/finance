@@ -17,6 +17,8 @@ id|Account|Reading|Date
 1|Personal|100000|21-05-17
 2|Savings|1000000|21-05-17
 
+The system will always use the last reading (highest id) for each account.
+
 ## transfers.csv ##
 
 Use this to transfer money in and out of your virtual accounts. For example, I might initially add a transfer to note that some of my savings are allocated to my holiday fund:
@@ -66,7 +68,8 @@ Use `finance.create_transfers_from_table(table,prefix)` to create transfers from
 * Create a transfer between the two specified accounts (`account` and `using`) so that the total transfers to `account` is zero.
 * Add new readings for both accounts so the balance of each account remain unchanged.
 * Print an instruction (e.g. "Transfer 150 from Savings to Personal"). This is important - since readings are supposed to reflect balances of real bank accounts, a real transfer must be made between them.
-This is used to get the real balance of `account` as close to its actual balance as possible (i.e. as close as possible excluding commitments).
+
+`set_transfer_to_zero` is used to get the real balance of `account` as close to its actual balance as possible (i.e. as close as possible excluding commitments).
 
 # Tests #
 
