@@ -24,12 +24,12 @@ class Finance:
             select distinct account from
             (
                 select distinct _from as account
-                from transactions
+                from transfers
                 
                 union
                 
                 select distinct _to as account
-                from transactions
+                from transfers
                 
                 union
                 
@@ -86,19 +86,19 @@ class Finance:
         else:
             return 0    
     
-    def get_credit(self,account):
+    def get_transfer(self,account):
         
         self.tb.cursor.execute("""
         with credits as
         (
             select sum(_amount) as credit
-            from transactions t
+            from transfers t
             where _to = ?
         ),
         debits as
         (
             select sum(_amount) as debit
-            from transactions t
+            from transfers t
             where _from = ?            
         )
         select coalesce(credit,0) - coalesce(debit,0)
@@ -133,7 +133,7 @@ class Finance:
         return int(self.tb.cursor.fetchone()[0])        
         
     def get_balance(self,account):
-        return self.get_latest_reading(account) + self.get_credit(account) + self.get_commitment(account)
+        return self.get_latest_reading(account) + self.get_transfer(account) + self.get_commitment(account)
         
     def get_total_balance(self):
         out = 0
@@ -146,12 +146,12 @@ class Finance:
     def get_timestamp(self):
         return datetime.now().strftime("%d-%m-%y")      
       
-    def insert_transaction(self,from_account, to_account, what, amount):
+    def insert_transfer(self,from_account, to_account, what, amount):
         
-        id = self.get_next("_id","transactions")
+        id = self.get_next("_id","transfers")
         
         self.tb.cursor.execute(
-        "insert into transactions values(?, ?, ?, ?, ?, ?)",
+        "insert into transfers values(?, ?, ?, ?, ?, ?)",
         (id,
         from_account,
         to_account,
@@ -160,7 +160,7 @@ class Finance:
         self.get_timestamp()))
   
     def set_closed_credit_to_zero(self,account,using):
-        amount = self.get_credit(account)
+        amount = self.get_transfer(account)
         
         from_account = None
         to_account = None
@@ -171,7 +171,7 @@ class Finance:
             from_account = using
             to_account = account
             
-        self.insert_transaction(from_account,
+        self.insert_transfer(from_account,
                                to_account,
                                "Zeroing Transfer",
                                abs(amount))
@@ -187,7 +187,7 @@ class Finance:
     
    
             
-    def closeTransaction(self,id):
+    def closetransfer(self,id):
         self.tb.cursor.execute(
         "insert into close_dates values(?, ?)",
         (id,
@@ -215,7 +215,7 @@ class Finance:
         """, (version,))
         
         for row in self.tb.cursor.fetchall():
-            self.insert_transaction(row[0],
+            self.insert_transfer(row[0],
                               row[1],
                               month+" "+row[2], 
                               row[3], 
@@ -232,7 +232,7 @@ class Finance:
         for account in self.get_accounts():
             print(account.ljust(16)
             +str(self.get_latest_reading(account)).ljust(16)
-            +str(self.get_credit(account, False)).ljust(16)
+            +str(self.get_transfer(account, False)).ljust(16)
             +str(self.get_balance(account)).ljust(16)
-            +str(self.get_credit(account, True)).ljust(16)
+            +str(self.get_transfer(account, True)).ljust(16)
             )

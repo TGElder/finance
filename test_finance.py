@@ -9,8 +9,8 @@ def test_get_accounts(get_finance):
     assert(accounts[5] == "Savings")
     assert(accounts[6] == "Short Term Savings")
 
-def test_get_next_transaction_id(get_finance):
-    assert(get_finance.get_next("_id","transactions")==7)
+def test_get_next_transfer_id(get_finance):
+    assert(get_finance.get_next("_id","transfers")==7)
 
 def test_get_next_commitment_id(get_finance):
     assert(get_finance.get_next("_id","commitments")==4)    
@@ -23,14 +23,14 @@ def test_get_latest_reading(get_finance):
     assert(get_finance.get_latest_reading("Savings")==900009)
     assert(get_finance.get_latest_reading("Joint")==40004)
     
-def test_get_credit(get_finance):
-    assert(get_finance.get_credit("Car")==10993)
-    assert(get_finance.get_credit("Joint")==-14997)
-    assert(get_finance.get_credit("Long Term Savings")==300003)    
-    assert(get_finance.get_credit("Outside")==0)    
-    assert(get_finance.get_credit("Personal")==34007)    
-    assert(get_finance.get_credit("Savings")==-400004)    
-    assert(get_finance.get_credit("Short Term Savings")==69998)
+def test_get_transfer(get_finance):
+    assert(get_finance.get_transfer("Car")==10993)
+    assert(get_finance.get_transfer("Joint")==-14997)
+    assert(get_finance.get_transfer("Long Term Savings")==300003)    
+    assert(get_finance.get_transfer("Outside")==0)    
+    assert(get_finance.get_transfer("Personal")==34007)    
+    assert(get_finance.get_transfer("Savings")==-400004)    
+    assert(get_finance.get_transfer("Short Term Savings")==69998)
 
 def test_get_commitment(get_finance):
     assert(get_finance.get_commitment("Car")==0)
@@ -59,24 +59,24 @@ def test_set_closed_credit_to_zero(get_finance):
     get_finance.set_closed_credit_to_zero("Personal","Savings")
     
     assert(get_finance.get_total_balance()==balanceBefore)
-    assert(get_finance.get_credit("Personal")==0)
+    assert(get_finance.get_transfer("Personal")==0)
         
     get_finance.set_closed_credit_to_zero("Joint","Savings")
     
     assert(get_finance.get_total_balance()==balanceBefore)
-    assert(get_finance.get_credit("Joint")==0)
+    assert(get_finance.get_transfer("Joint")==0)
    
     get_finance.load()
     
-def test_insert_transaction(get_finance):
+def test_insert_transfer(get_finance):
     
-    next = get_finance.get_next("_id","transactions")
+    next = get_finance.get_next("_id","transfers")
 
-    get_finance.insert_transaction("Short Term Savings","Personal","Lens",444.44)
+    get_finance.insert_transfer("Short Term Savings","Personal","Lens",444.44)
     
     get_finance.get_cursor().execute("""
     select _from,_to,_what,_amount,_added
-    from transactions
+    from transfers
     where _id = ?
     """, (next,))
     
