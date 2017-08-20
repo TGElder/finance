@@ -15,6 +15,9 @@ class Finance:
         
     def save(self):
         self.tb.save()
+        
+    def get_cursor(self):
+        return self.tb.cursor
 
     def get_accounts(self):
             self.tb.cursor.execute("""
@@ -27,6 +30,16 @@ class Finance:
                 
                 select distinct _to as account
                 from transactions
+                
+                union
+                
+                select distinct _from as account
+                from commitments
+                
+                union
+                
+                select distinct _to as account
+                from commitments
                 
                 union
                 
@@ -73,37 +86,54 @@ class Finance:
         else:
             return 0    
     
-    def get_credit(self,account, closed_only):
+    def get_credit(self,account):
         
-        if closed_only:
-            closed = 1
-        else:
-            closed = 0
-            
         self.tb.cursor.execute("""
         with credits as
         (
-            select round(sum(_amount),2) as credit
+            select sum(_amount) as credit
             from transactions t
-            where ((t._id in (select _transaction_id from close_dates)) or not(?))
+            where _to = ?
+        ),
+        debits as
+        (
+            select sum(_amount) as debit
+            from transactions t
+            where _from = ?            
+        )
+        select coalesce(credit,0) - coalesce(debit,0)
+        from credits
+        cross join debits
+        """, (account,account))
+        
+        return int(self.tb.cursor.fetchone()[0])
+
+    def get_commitment(self,account):
+
+        self.tb.cursor.execute("""
+        with credits as
+        (
+            select sum(_amount) as credit
+            from commitments c
+            where (c._id not in (select _commitment_id from close_dates))
             and _to = ?
         ),
         debits as
         (
-            select round(sum(_amount),2) as debit
-            from transactions t
-            where ((t._id in (select _transaction_id from close_dates)) or not(?))
+            select sum(_amount) as debit
+            from commitments c
+            where (c._id not in (select _commitment_id from close_dates))
             and _from = ?
         )
-        select round(coalesce(credit,0) - coalesce(debit,0),2)
+        select coalesce(credit,0) - coalesce(debit,0)
         from credits
         cross join debits
-        """, (closed,account,closed,account))
+        """, (account,account))
         
-        return int(self.tb.cursor.fetchone()[0])
-
+        return int(self.tb.cursor.fetchone()[0])        
+        
     def get_balance(self,account):
-        return self.get_latest_reading(account) + self.get_credit(account, False)
+        return self.get_latest_reading(account) + self.get_credit(account) + self.get_commitment(account)
         
     def get_total_balance(self):
         out = 0
@@ -112,36 +142,11 @@ class Finance:
             out += self.get_balance(account)
             
         return out
-            
-        
-    def set_closed_credit_to_zero(self,account,using):
-        amount = self.get_credit(account,True)
-        
-        from_account = None
-        to_account = None
-        if amount > 0:
-            from_account = account
-            to_account = using
-        else:
-            from_account = using
-            to_account = account
-            
-        self.insertTransaction(from_account,
-                               to_account,
-                               "Zeroing Transfer",
-                               abs(amount),
-                               True)
-    
-        reading = self.get_latest_reading(account)
-        self.insertReading(account,reading+amount)
-        
-        reading = self.get_latest_reading(using)        
-        self.insertReading(using,reading-amount)
-
-        print("Transfer "+str(abs(amount))+" from "+to_account+" to "+from_account+"!")
-        
-    
-    def insertTransaction(self,from_account, to_account, what, amount, closed):
+      
+    def get_timestamp(self):
+        return datetime.now().strftime("%d-%m-%y")      
+      
+    def insert_transaction(self,from_account, to_account, what, amount):
         
         id = self.get_next("_id","transactions")
         
@@ -152,16 +157,41 @@ class Finance:
         to_account,
         what,
         str(amount),
-        self.getTimestamp()))
+        self.get_timestamp()))
+  
+    def set_closed_credit_to_zero(self,account,using):
+        amount = self.get_credit(account)
+        
+        from_account = None
+        to_account = None
+        if amount > 0:
+            from_account = account
+            to_account = using
+        else:
+            from_account = using
+            to_account = account
+            
+        self.insert_transaction(from_account,
+                               to_account,
+                               "Zeroing Transfer",
+                               abs(amount))
     
-        if closed:    
-            self.closeTransaction(id)
+        reading = self.get_latest_reading(account)
+        self.insertReading(account,reading+amount)
+        
+        reading = self.get_latest_reading(using)        
+        self.insertReading(using,reading-amount)
+
+        print("Transfer "+str(abs(amount))+" from "+to_account+" to "+from_account+"!")
+        
+    
+   
             
     def closeTransaction(self,id):
         self.tb.cursor.execute(
         "insert into close_dates values(?, ?)",
         (id,
-        self.getTimestamp()))
+        self.get_timestamp()))
         
     def insertReading(self,account,reading):
         self.tb.cursor.execute(
@@ -169,14 +199,13 @@ class Finance:
         (self.get_next("_id","readings"),
         account,
         str(reading),
-        self.getTimestamp()))
+        self.get_timestamp()))
         
 
         
 
     
-    def getTimestamp(self):
-        return datetime.now().strftime("%d-%m-%y")
+
         
     def insertMonthlys(self,version, month):
         self.tb.cursor.execute("""
@@ -186,7 +215,7 @@ class Finance:
         """, (version,))
         
         for row in self.tb.cursor.fetchall():
-            self.insertTransaction(row[0],
+            self.insert_transaction(row[0],
                               row[1],
                               month+" "+row[2], 
                               row[3], 

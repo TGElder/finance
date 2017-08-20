@@ -8,3 +8,4 @@ TEST_DIRECTORY = "test"
 @pytest.fixture(scope="session")
 def get_finance():
     return finance.Finance("test")
+   

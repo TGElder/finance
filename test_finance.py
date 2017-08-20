@@ -10,8 +10,11 @@ def test_get_accounts(get_finance):
     assert(accounts[6] == "Short Term Savings")
 
 def test_get_next_transaction_id(get_finance):
-    assert(get_finance.get_next("_id","transactions")==9)
+    assert(get_finance.get_next("_id","transactions")==7)
 
+def test_get_next_commitment_id(get_finance):
+    assert(get_finance.get_next("_id","commitments")==4)    
+    
 def test_get_next_reading_id(get_finance):
     assert(get_finance.get_next("_id","readings")==13)
     
@@ -21,22 +24,22 @@ def test_get_latest_reading(get_finance):
     assert(get_finance.get_latest_reading("Joint")==40004)
     
 def test_get_credit(get_finance):
-    assert(get_finance.get_credit("Car",False)==10993)
-    assert(get_finance.get_credit("Joint",False)==-14997)
-    assert(get_finance.get_credit("Long Term Savings",False)==300003)    
-    assert(get_finance.get_credit("Outside",False)==391996)    
-    assert(get_finance.get_credit("Personal",False)==42015)    
-    assert(get_finance.get_credit("Savings",False)==-800008)    
-    assert(get_finance.get_credit("Short Term Savings",False)==69998)
-    
-def test_get_credit_closed(get_finance):
-    assert(get_finance.get_credit("Car",True)==10993)
-    assert(get_finance.get_credit("Joint",True)==-14997)
-    assert(get_finance.get_credit("Long Term Savings",True)==300003)    
-    assert(get_finance.get_credit("Outside",True)==0)    
-    assert(get_finance.get_credit("Personal",True)==34007)    
-    assert(get_finance.get_credit("Savings",True)==-400004)    
-    assert(get_finance.get_credit("Short Term Savings",True)==69998)
+    assert(get_finance.get_credit("Car")==10993)
+    assert(get_finance.get_credit("Joint")==-14997)
+    assert(get_finance.get_credit("Long Term Savings")==300003)    
+    assert(get_finance.get_credit("Outside")==0)    
+    assert(get_finance.get_credit("Personal")==34007)    
+    assert(get_finance.get_credit("Savings")==-400004)    
+    assert(get_finance.get_credit("Short Term Savings")==69998)
+
+def test_get_commitment(get_finance):
+    assert(get_finance.get_commitment("Car")==0)
+    assert(get_finance.get_commitment("Joint")==-0)
+    assert(get_finance.get_commitment("Long Term Savings")==0)    
+    assert(get_finance.get_commitment("Outside")==391996)    
+    assert(get_finance.get_commitment("Personal")==8008)    
+    assert(get_finance.get_commitment("Savings")==-400004)    
+    assert(get_finance.get_commitment("Short Term Savings")==0)  
     
 def test_get_balance(get_finance):
     assert(get_finance.get_balance("Car")==10993)
@@ -56,9 +59,33 @@ def test_set_closed_credit_to_zero(get_finance):
     get_finance.set_closed_credit_to_zero("Personal","Savings")
     
     assert(get_finance.get_total_balance()==balanceBefore)
-    assert(get_finance.get_credit("Personal",True)==0)
+    assert(get_finance.get_credit("Personal")==0)
         
     get_finance.set_closed_credit_to_zero("Joint","Savings")
     
     assert(get_finance.get_total_balance()==balanceBefore)
-    assert(get_finance.get_credit("Joint",True)==0)
+    assert(get_finance.get_credit("Joint")==0)
+   
+    get_finance.load()
+    
+def test_insert_transaction(get_finance):
+    
+    next = get_finance.get_next("_id","transactions")
+
+    get_finance.insert_transaction("Short Term Savings","Personal","Lens",444.44)
+    
+    get_finance.get_cursor().execute("""
+    select _from,_to,_what,_amount,_added
+    from transactions
+    where _id = ?
+    """, (next,))
+    
+    results = get_finance.get_cursor().fetchone()
+    
+    assert(results[0]=="Short Term Savings")
+    assert(results[1]=="Personal")
+    assert(results[2]=="Lens")
+    assert(results[3]=="444.44")
+    assert(results[4]==get_finance.get_timestamp())
+    
+    
