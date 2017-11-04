@@ -129,7 +129,7 @@ def test_insert_reading(get_finance):
 def test_create_transfers_from_table(get_finance):
     next = get_finance.get_next("_id","transfers")
 
-    get_finance.create_transfers_from_table("monthly_budgets","August")
+    get_finance.create_transfers_from_table("monthly_budget","August")
 
     get_finance.get_cursor().execute("""
     select _from,_to,_what,_amount,_added

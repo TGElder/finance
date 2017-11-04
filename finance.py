@@ -206,8 +206,8 @@ class Finance:
     def create_transfers_from_table(self,table,prefix=""):
         self.tb.cursor.execute("""
         select _from,_to,_what,_amount
-        from monthly_budget
-        """)
+        from {}
+        """.format(table))
         
         if prefix:
             prefix = prefix+" "
